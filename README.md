@@ -1,14 +1,14 @@
 # confluent-startup
 
-# PREREQUESITES
+## PREREQUESITES
 
-  jdk8
-  Docker
-  fish bash (in order to use some commands, but you can use bash or zsh)
-  curl
+  	jdk8
+  	Docker
+  	fish bash (in order to use some commands, but you can use bash or zsh)
+  	curl
   
-# fish way
-	
+# Setting the environment
+
 	set -x JAVA_HOME (/usr/libexec/java_home -v 1.8)
 
 	set -x CONFLUENT_CLI_HOME /Users/aironman/confluent-5.3.1/confluent-cli
@@ -21,8 +21,6 @@
 
 	$CONFLUENT_HOME/bin/confluent-hub install --no-prompt confluentinc/kafka-connect-datagen:latest
 
-# not necessary because java and javac is located within /usr/bin/java, but...
-
 	set PATH $JAVA_HOME $PATH
 
 	set PATH $CONFLUENT_CLI_HOME/bin $PATH
@@ -33,7 +31,7 @@
 
 	confluent local start
 
-#creating some kafka topics 
+# creating some kafka topics 
 	
 	kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic users
 
@@ -50,8 +48,8 @@
 	wget https://github.com/confluentinc/kafka-connect-datagen/raw/master/config/connector_users_cos.config
 	curl -X POST -H "Content-Type: application/json" --data @connector_users_cos.config http://localhost:8083/connectors
 
-# Create and Write to a Stream and Table using KSQL
-# Start the KSQL CLI in your terminal with this command
+## Create and Write to a Stream and Table using KSQL
+## Start the KSQL CLI in your terminal with this command
 
 	LOG_DIR=./ksql_logs 
 	set LOG_DIR ./ksql_logs
@@ -86,10 +84,11 @@
 
 	EXPLAIN CTAS_PAGEVIEWS_REGIONS_2;
 
-  confluent local stop
+  	confluent local stop
 
 # BE CAREFUL! ARE YOU SURE?
-  confluent local destroy
+  	
+	confluent local destroy
 
 Links
 

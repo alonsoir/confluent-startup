@@ -1,0 +1,141 @@
+
+https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/
+
+To deploy dashboard:
+
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta4/aio/deploy/recommended.yaml
+
+To access dashboard:
+
+	kubectl proxy
+
+	http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/overview?namespace=default
+
+To create the user and necessary token:
+
+	https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
+
+Go to this folder:
+
+	cd /Users/aironman/dashboard-kubernetes
+
+Copy this data to that dashboard-adminuser.yaml file if not exist previously:
+
+	vi dashboard-adminuser.yaml
+
+or run this command:
+
+echo "apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard" > dashboard-adminuser.yaml
+
+To create the token:
+
+	kubectl apply -f dashboard-adminuser.yaml
+
+To know what token have been generated:
+
+Change to bash!
+
+	kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
+
+
+token:      
+
+eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJrdWJlcm5ldGVzLWRhc2hib2FyZC10b2tlbi1sd2ZtdyIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjgyOWFkNGVjLTU1YTAtNGMyNC05MGMwLTllOWE5OWNiMTE2MCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlcm5ldGVzLWRhc2hib2FyZDprdWJlcm5ldGVzLWRhc2hib2FyZCJ9.OomItNXGIW8Axwv0Rv-bddvjbyv_NfqeCKW-YEcZO7TSxWvTDv7NBtEHO0c0XIE832has5-97qagdZVomGOewkqkrlZ48JD5DrjygAmmyri5QDbKA6BXMcuoXrzSKRu92lwQ-N9AplWwKuGRtO6GWg0f1vplUsRDHcQ-IBi06sRhWHyzMZ7jTk4KdJ9sFGu33jExhGnF90VjWmAzzw5GuTjrV-R6r_2Obob40FU6c8v9WyK8jcJbL_PjY70wjBg366pKpR1RrvRciohQ3luPzxFE3mmmm0hkYgmh-SqsnFJU3OhB-PDDwTSQfKGMtPgTivuk9KN8iOv1RFDNm0UjSg
+
+
+
+# Configure Access to Multiple Clusters
+
+In your folder, /Users/aironman/gitProjects/kubernetes-startup, create a directory named config-exercise. In your config-exercise directory, create a file named config-demo with this content:
+
+apiVersion: v1
+kind: Config
+preferences: {}
+
+clusters:
+- cluster:
+  name: development
+- cluster:
+  name: scratch
+
+users:
+- name: developer
+- name: experimenter
+
+contexts:
+- context:
+  name: dev-frontend
+- context:
+  name: dev-storage
+- context:
+  name: exp-scratch
+
+  Run these commands within config-exercise:
+
+kubectl config --kubeconfig=config-demo set-cluster development --server=https://1.2.3.4 --certificate-authority=fake-ca-file
+
+kubectl config --kubeconfig=config-demo set-cluster scratch --server=https://5.6.7.8 --insecure-skip-tls-verify
+
+kubectl config --kubeconfig=config-demo set-credentials developer --client-certificate=fake-cert-file --client-key=fake-key-seefile
+
+kubectl config --kubeconfig=config-demo set-credentials experimenter --username=exp --password=some-password
+
+kubectl config --kubeconfig=config-demo set-context dev-frontend --cluster=development --namespace=frontend --user=developer
+kubectl config --kubeconfig=config-demo set-context dev-storage --cluster=development --namespace=storage --user=developer
+kubectl config --kubeconfig=config-demo set-context exp-scratch --cluster=scratch --namespace=default --user=experimenter
+
+Open your config-demo file to see the added details. As an alternative to opening the config-demo file, you can use the config view command.
+
+kubectl config --kubeconfig=config-demo view
+
+kubectl config --kubeconfig=config-demo use-context dev-frontend
+
+kubectl config --kubeconfig=config-demo view --minify
+
+kubectl config --kubeconfig=config-demo use-context exp-scratch
+
+kubectl config --kubeconfig=config-demo view --minify
+
+kubectl config --kubeconfig=config-demo use-context dev-storage
+
+kubectl config --kubeconfig=config-demo view --minify
+
+
+# Now i have to set KUBECONFIG variable
+
+	set -x CONFLUENT_CLI_HOME /Users/aironman/confluent-5.3.1/confluent-cli
+
+	set PATH $JAVA_HOME $PATH
+
+	set -x CONFIG_DEMO /Users/aironman/gitProjects/kubernetes-startup/config-exercise/config-demo
+	
+	set -x CONFIG_DEMO_2 /Users/aironman/gitProjects/kubernetes-startup/config-exercise/config-demo-2
+
+	set KUBECONFIG $CONFIG_DEMO $KUBECONFIG
+
+	set KUBECONFIG $CONFIG_DEMO_2 $KUBECONFIG
+
+kubectl config view
+
+# Append $HOME/.kube/config to your KUBECONFIG environment variable
+
+
+	set KUBECONFIG /Users/aironman/.kube/config $KUBECONFIG
+
+

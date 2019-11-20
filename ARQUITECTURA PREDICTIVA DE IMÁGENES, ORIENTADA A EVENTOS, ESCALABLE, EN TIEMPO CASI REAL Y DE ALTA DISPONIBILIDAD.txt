@@ -1,0 +1,29 @@
+Últimamente he estado mirando cosillas para ver cual es la mejor manera para una arquitectura orientada a eventos ( con Confluent platform, por ejemplo) para conseguir predicciones sobre imágenes, además de luchar con Kubernetes y la plataforma de confluence, ya saben, una manera de tener empaquetado y super fácil un Cluster Kafka/Zookeeper, a la vez que te animan a usar dicha plataforma como Base de datos.
+
+No veo mucho la utilidad de usar Kafka como una base de datos, como te animan a usarlo la gente de Confluent, es decir, te dicen, usa la plataforma con kafkastreams para hacer consultas Sql sobre los datos del topic según aparezcan. No veo mucho esa solución, para empezar porque los datos en un broker son de naturaleza volátil, es decir, si, puedes guardarlos durante un tiempo, un mes, varios quizás, pero, lo necesario potencialmente hablando como para hacer Business inteligente?
+
+Yo creo que no me da esa seguridad, pero alguna utilidad se le puede sacar a la plataforma, hay que reconocérselo, como mínimo te soluciona de un plumazo todo el trabajo que había que hacer para montar un Cluster Kafka, con sus brokers Kafka, su Zookeeper para alta disponibilidad, un dashboard para ver como entran y salen los datos, etc…, También se puede usar kafkastreams para transformar los datos tal y como aparecen por el topic con map reduce, transformarlo en algo, o transformarlos mediante una sentencia SQL, para luego meterlo en otro topic, o guardarlo en una base de datos de verdad…
+
+Eso te lo soluciona en un momento la plataforma, como mínimo.
+
+Ahora la idea loca. Quiero tener una arquitectura orientada a eventos, en el que un evento es por ejemplo, la entrada en una carpeta de una nueva imagen, con su filepath, como mínimo. Básicamente para esta idea inicial veo publicadores de eventos en la forma de Drones que hacen fotos y las envían a un servidor, de manera que se activaría un productor Kafka con la aparición de esa foto para enchufarlo a un topic, en concreto, metería al topic, como mínimo el filepath de la imagen guardada en un sistema de ficheros, la fecha, el identificador del evento…
+
+Luego, una vez asegurada la existencia de ese fichero en el hdfs o similar, un consumidor de ese topic lee ese filepath e invoca un servidor gRPC con TensorFlow embebido o acoplado a las peticiones web.
+
+TensorFlowServer ya tiene entrenado un modelo para darte una predicción del objeto, el servidor web recibe peticiones y te da la predicción. Luego el resultado de esa petición se escribe en otro topic de salida, para hacer lo que sea, guardarlo a disco, que sirva para un dashboard, crear otro evento para que llegue a otra parte, etc… 
+
+El caso es que, no me gusta demasiado la parte de necesitar tener embebido el modelo predictivo dentro de un servidor web, puede ser con gRPC o con Spring-boot, porque eso me obliga a pasar por ese cuello de botella, es decir, primero estoy limitado por el número de peticiones que pueda admitir el servidor web. Segundo, puede tener problemas para ver como se podría actualizar un modelo preentrenado en tiempo real según vayan llegando nuevas imágenes. La idea es, según tenga más imágenes, disminuiría potencial el sesgo debido al número y calidad de ellas.
+
+Aunque tiene ventajas, porque la creación de ese modelo normalmente se encarga a un data scientist, al fin y al cabo, él entrena y genera un fichero .rb, atado a un TensorFlowServer gRPC, y todo eso al final lo puedes empaquetar en un contenedor Docker, de manera que podrías tener incluso un swarm de contenedores docker con un proxy, (kubernetes) para hacerle peticiones desde el cliente TensorFlow embebido en el consumidor Kafka, pero, no habría una manera mejor?
+
+Estaba pensando en que ese modelo predictivo, lo ideal es que se pudiera entrenar en transito en tiempo real, es decir, mientras llegan nuevas imágenes, usarlas a la vez para generar a la vez, en otro proceso otro modelo predictivo, tratando de conseguir mejor puntuación, cuando se mide una puntuación objetiva mejor que la que tiene el modelo anterior, pues se hace el cambio.
+
+Y ahí está la parte que no se muy bien, porque si ahora está embebido en contenedores dockers, varios potencialmente, tendrías que, primero, el servicio tendría que estar funcionando siempre, es decir, no hay paradas de funcionamiento, algo factible porque YA tienes contenedores con un porcentaje aceptable, por lo que necesitaría, por ejemplo, si es necesario claro, parar el numero de contenedores instanciados para recuperar recursos, luego, el código que tiene el servidor TensorFlow preguntaría a un servicio externo cual es el último modelo generado, para traerlo por la red, cargarlo y terminar de embeber el servidor gRPC TensorFlow. Por último, se tiene que compilar el nuevo jar, empaquetar en un contenedor Docker a la manera de Kubernetes y volverlos a subir al Cluster.
+
+Así tantas vences como sea necesario para dar servicio.Ahora mismo, tengo uno de esos contenedores TensorFlowServers gRPC dockerizados, funciona más o menos bien, para luego tratar de adaptarlo a lo que yo quiero, es decir, que antes de cargar un modelo preentrenado por otro, pueda preguntar a un repositorio donde cargar el último modelo.
+
+Luego se tiene que automatizar la creación de la nueva imagen docker, para luego crear contenedores docker y escalar adecuadamente, a la manera de Kubernetes, claro, para que su proxy se haga carga de las futuras peticiones.
+
+La idea final es conseguir alta disponibilidad en un sistema orientado a eventos para reconocer imágenes y dar a los clientes los resultados de dicha predicción. La manera actual es entrenar esos modelos offline, pero ese tiene que el problema que puede ser inaceptable, los clientes nunca paran de necesitar, potencialmente, el servicio de predicción. Ahí es donde entra esta arquitectura..
+
+Es muy disparatada la idea?

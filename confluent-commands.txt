@@ -101,6 +101,7 @@
 # Run one instance of the Kafka Connect Datagen connector to produce Kafka data to the pageviews topic in AVRO format
 	
 	wget https://github.com/confluentinc/kafka-connect-datagen/raw/master/config/connector_pageviews_cos.config
+	
 	curl -X POST -H "Content-Type: application/json" --data @connector_pageviews_cos.config http://localhost:8083/connectors
 
 # Run another instance of the Kafka Connect Datagen connector to produce Kafka data to the users topic in AVRO format
